@@ -28,4 +28,9 @@ public class BookAuthorController {
     public Map<Descriptors.FieldDescriptor, Object> getBooksByAuthor() {
         return bookAuthorClientService.getExpensiveBook();
     }
+
+    @GetMapping("/books/{gender}")
+    public List<Map<Descriptors.FieldDescriptor, Object>> getBooksByAuthorGender(@PathVariable String gender) {
+        return bookAuthorClientService.getBooksByAuthorGender(gender);
+    }
 }
