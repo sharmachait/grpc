@@ -1,6 +1,7 @@
 package com.sharmachait;
 
 import com.sharmachait.proto.gen.Author;
+import com.sharmachait.proto.gen.Book;
 import com.sharmachait.proto.gen.BookAuthorServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
@@ -16,6 +17,15 @@ public class BookAuthorServerService extends BookAuthorServiceGrpc.BookAuthorSer
                         ()->{responseObserver.onError(new RuntimeException("Author not found"));}
                 );
 
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getBooksByAuthor(Author request, StreamObserver<Book> responseObserver) {
+        SeedDB.getBooksFromTempDb()
+                .stream()
+                .filter(book -> book.getAuthorId() == request.getAuthorId())
+                .forEach(responseObserver::onNext);
         responseObserver.onCompleted();
     }
 }
