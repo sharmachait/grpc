@@ -70,35 +70,27 @@ public class BookAuthorClientService {
         return done;
     }
 
-    public Map<Descriptors.FieldDescriptor, Object> getExpensiveBook(){
-        Map<Descriptors.FieldDescriptor, Object>[] response = new Map[]{null};
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        StreamObserver<Book> responseObserver = asyncClient.getExpensiveBook(getExpensiveBookObserver(response, future));
-        SeedDB.getBooksFromTempDb().forEach(responseObserver::onNext);
-        responseObserver.onCompleted();
-        future.join();
-        return response[0];
-    }
+    public Map<Descriptors.FieldDescriptor, Object> getExpensiveBook() {
+        CompletableFuture<Map<Descriptors.FieldDescriptor, Object>> future = new CompletableFuture<>();
 
-    private StreamObserver<Book> getExpensiveBookObserver(
-            Map<Descriptors.FieldDescriptor, Object>[] response,
-            CompletableFuture<Void> future
-    ) {
-        return new StreamObserver<Book>() {
+        StreamObserver<Book> responseObserver = new StreamObserver<Book>() {
             @Override
             public void onNext(Book book) {
-                response[0] = book.getAllFields();
+                future.complete(book.getAllFields());
             }
             @Override
             public void onError(Throwable throwable) {
-                log.error(throwable.getMessage());
-                throwable.printStackTrace();
                 future.completeExceptionally(throwable);
             }
             @Override
             public void onCompleted() {
-                future.complete(null);
+                // No action needed; result already set in onNext
             }
         };
+
+        StreamObserver<Book> requestObserver = asyncClient.getExpensiveBook(responseObserver);
+        SeedDB.getBooksFromTempDb().forEach(requestObserver::onNext);
+        requestObserver.onCompleted();
+        return future.join();
     }
 }
