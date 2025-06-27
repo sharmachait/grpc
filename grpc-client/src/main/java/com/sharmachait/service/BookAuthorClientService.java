@@ -93,4 +93,34 @@ public class BookAuthorClientService {
         requestObserver.onCompleted();
         return future.join();
     }
+
+    public List<Map<Descriptors.FieldDescriptor, Object>> getBooksByAuthorGender(String gender) {
+        CompletableFuture<List<Map<Descriptors.FieldDescriptor, Object>>> future = new CompletableFuture<>();
+        StreamObserver<Book> responseObserver = new StreamObserver<Book>() {
+            List<Map<Descriptors.FieldDescriptor, Object>> bookList = new ArrayList<>();
+            @Override
+            public void onNext(Book book) {
+                bookList.add(book.getAllFields());
+            }
+            @Override
+            public void onError(Throwable throwable) {
+                future.completeExceptionally(throwable);
+            }
+            @Override
+            public void onCompleted() {
+                // No action needed; result already set in onNext
+                future.complete(bookList);
+            }
+        };
+        StreamObserver<Book> requestObserver = asyncClient.getBooksByGender(responseObserver);
+        SeedDB.getAuthorsFromTempDb()
+                .stream()
+                .filter(a->a.getGender().equals(gender))
+                .forEach(a->{
+                    Book book = Book.newBuilder().setAuthorId(a.getAuthorId()).build();
+                    requestObserver.onNext(book);
+                });
+        requestObserver.onCompleted();
+        return future.join();
+    }
 }
