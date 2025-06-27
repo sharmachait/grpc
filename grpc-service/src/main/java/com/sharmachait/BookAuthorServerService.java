@@ -50,6 +50,7 @@ public class BookAuthorServerService extends BookAuthorServiceGrpc.BookAuthorSer
             public void onError(Throwable throwable) {
                 log.error(throwable.getMessage());
                 throwable.printStackTrace();
+                responseObserver.onError(throwable);
             }
 
             @Override

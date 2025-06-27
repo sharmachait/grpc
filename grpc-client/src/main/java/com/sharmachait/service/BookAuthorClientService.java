@@ -1,6 +1,7 @@
 package com.sharmachait.service;
 
 import com.google.protobuf.Descriptors;
+import com.sharmachait.SeedDB;
 import com.sharmachait.proto.gen.Author;
 import com.sharmachait.proto.gen.Book;
 import com.sharmachait.proto.gen.BookAuthorServiceGrpc;
@@ -67,5 +68,37 @@ public class BookAuthorClientService {
         });
 
         return done;
+    }
+
+    public Map<Descriptors.FieldDescriptor, Object> getExpensiveBook(){
+        Map<Descriptors.FieldDescriptor, Object>[] response = new Map[]{null};
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        StreamObserver<Book> responseObserver = asyncClient.getExpensiveBook(getExpensiveBookObserver(response, future));
+        SeedDB.getBooksFromTempDb().forEach(responseObserver::onNext);
+        responseObserver.onCompleted();
+        future.join();
+        return response[0];
+    }
+
+    private StreamObserver<Book> getExpensiveBookObserver(
+            Map<Descriptors.FieldDescriptor, Object>[] response,
+            CompletableFuture<Void> future
+    ) {
+        return new StreamObserver<Book>() {
+            @Override
+            public void onNext(Book book) {
+                response[0] = book.getAllFields();
+            }
+            @Override
+            public void onError(Throwable throwable) {
+                log.error(throwable.getMessage());
+                throwable.printStackTrace();
+                future.completeExceptionally(throwable);
+            }
+            @Override
+            public void onCompleted() {
+                future.complete(null);
+            }
+        };
     }
 }
